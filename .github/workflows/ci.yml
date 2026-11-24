@@ -1,0 +1,153 @@
+# ci (BUILD_OUTLINE.md section 4). The required status `ci` is the job named
+# ci below. It runs the PR's code with a read-only token. The report job runs
+# no repo code; it posts forge/eval and then labels the PR ready-for-review,
+# or, in P5, sends the eval to forge's box instead of labeling.
+name: ci
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      phase: ${{ steps.phase.outputs.phase }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Phase from state.json
+        id: phase
+        run: |
+          phase=$(jq -er .phase .forge/state.json) || { echo "::error::.forge/state.json has no phase"; exit 1; }
+          if [[ ! "$phase" =~ ^P[0-9]+[a-z]?$ ]]; then echo "::error::bad phase '$phase'"; exit 1; fi
+          echo "phase=$phase" >> "$GITHUB_OUTPUT"
+          echo "phase: $phase"
+
+      - name: PR title matches state.json
+        if: github.event_name == 'pull_request'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          PHASE: ${{ steps.phase.outputs.phase }}
+        run: |
+          project=$(jq -r .project .forge/state.json)
+          re='^\[(P[0-9]+[a-z]?)( r[0-9]+)?\] ([^:]+): .+'
+          if [[ ! "$TITLE" =~ $re ]]; then
+            echo "::error::title must read '[P<k>] <project>: <one line>' or '[P<k> r<n>] <project>: <one line>'"; exit 1
+          fi
+          if [[ "${BASH_REMATCH[1]}" != "$PHASE" ]]; then
+            echo "::error::title phase ${BASH_REMATCH[1]} but state.json phase $PHASE"; exit 1
+          fi
+          if [[ "${BASH_REMATCH[3]}" != "$project" ]]; then
+            echo "::error::title project '${BASH_REMATCH[3]}' but state.json project '$project'"; exit 1
+          fi
+          echo "title ok"
+
+      - name: Attribution scan (commits and PR body)
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          if [[ "$EVENT" == pull_request ]]; then
+            range="$PR_BASE..$PR_HEAD"
+          elif [[ "$PUSH_BEFORE" =~ ^0+$ ]]; then
+            range="$PUSH_AFTER"
+          else
+            range="$PUSH_BEFORE..$PUSH_AFTER"
+          fi
+          bash .github/scripts/attribution-scan.sh "$range"
+
+      - name: Secret scan (gitleaks, full history)
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -sSfL -o gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          tar xzf gitleaks.tgz gitleaks
+          cd "$GITHUB_WORKSPACE"
+          "$RUNNER_TEMP/gitleaks" git . --config .github/gitleaks.toml --gitleaks-ignore-path .github \
+            --redact --no-banner --exit-code 1
+
+      - name: lane-scope self-test
+        run: node scripts/lane-scope.test.mjs
+
+      - name: Project setup (scripts/setup.sh)
+        if: hashFiles('scripts/setup.sh') != ''
+        run: bash scripts/setup.sh
+
+      - name: Project tests and lint (scripts/test.sh)
+        if: hashFiles('scripts/test.sh') != ''
+        run: bash scripts/test.sh
+
+      - name: Phase gate (scripts/forge-gate.sh, red-test expectations, lane-scope)
+        env:
+          PHASE: ${{ steps.phase.outputs.phase }}
+          FORGE_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.event.pull_request.base.ref) || 'HEAD' }}
+        run: bash scripts/forge-gate.sh "$PHASE"
+
+  report:
+    needs: ci
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      statuses: write
+      pull-requests: write
+      issues: write
+    env:
+      REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+      PHASE: ${{ needs.ci.outputs.phase }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: forge/eval
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISPATCH_TOKEN: ${{ secrets.FORGE_DISPATCH_TOKEN }}
+        run: |
+          post() { gh api "repos/$REPO/statuses/$SHA" -f state="$1" -f context=forge/eval -f description="$2" -f target_url="$RUN_URL" >/dev/null; }
+          if [[ "$PHASE" != P5 ]]; then
+            post success "not an eval phase"
+            exit 0
+          fi
+          if [[ -z "$DISPATCH_TOKEN" ]]; then
+            post failure "FORGE_DISPATCH_TOKEN is not set in this repo"
+            exit 1
+          fi
+          jq -n --arg repo "$REPO" --argjson pr "$PR" --arg sha "$SHA" --arg phase "$PHASE" \
+            '{event_type: "eval", client_payload: {repo: $repo, pr: $pr, sha: $sha, phase: $phase}}' \
+            | GH_TOKEN="$DISPATCH_TOKEN" gh api repos/aetiusgular/forge/dispatches --input -
+          post pending "queued on the box"
+
+      - name: Label ready-for-review
+        if: needs.ci.outputs.phase != 'P0' && needs.ci.outputs.phase != 'P5'
+        env:
+          # Smoke test line 4: if a label added by GITHUB_TOKEN does not start
+          # the review task, set FORGE_LABEL_TOKEN and this step uses it.
+          GH_TOKEN: ${{ secrets.FORGE_LABEL_TOKEN || github.token }}
+        run: gh api "repos/$REPO/issues/$PR/labels" -f "labels[]=ready-for-review" >/dev/null

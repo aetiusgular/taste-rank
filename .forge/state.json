@@ -1,0 +1,37 @@
+{
+  "project": "taste-rank",
+  "code": "TR",
+  "target": "Krea",
+  "phase": "P0",
+  "round": 1,
+  "phases": [
+    "P1",
+    "P2",
+    "P3a",
+    "P3b",
+    "P3c",
+    "P4",
+    "P5",
+    "P6",
+    "P7"
+  ],
+  "human_gates": [
+    "P6",
+    "P7"
+  ],
+  "optional_human_gates": [],
+  "session_budget": {
+    "P1": 2,
+    "P2": 2,
+    "P3*": 2,
+    "P4": 2,
+    "P5": 2,
+    "P6": 1
+  },
+  "sessions_used": {},
+  "needs_box": [
+    "P5"
+  ],
+  "eval_boundary": "srt-gpu",
+  "closed": false
+}

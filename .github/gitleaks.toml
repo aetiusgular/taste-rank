@@ -1,0 +1,7 @@
+# gitleaks config for ci. ci passes it with --config, so a .gitleaks.toml a
+# PR adds at the repo root is never read. Lives under .github/, which
+# forge/guard protects.
+title = "forge"
+
+[extend]
+useDefault = true
