@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "One results/*.jsonl row (contracts/eval.md, Results rows).",
+  "type": "object",
+  "required": ["run_id", "git_sha", "machine", "model_revision", "quant", "runtime", "date", "row", "split", "table", "metrics", "n_customers"],
+  "properties": {
+    "run_id": { "type": "string", "minLength": 1 },
+    "git_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "machine": { "type": "string", "minLength": 1 },
+    "model_revision": { "type": ["string", "null"] },
+    "quant": { "type": ["string", "null"] },
+    "runtime": { "type": ["string", "null"] },
+    "date": { "type": "string" },
+    "row": { "type": "string", "enum": ["POP", "E0-siglip", "E0-fclip", "E1-siglip", "E0-tiny", "E1-tiny"] },
+    "split": { "type": "string", "enum": ["dev", "heldout"] },
+    "table": { "type": "string", "description": "overall, or a product_group_name" },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "ndcg@10": { "type": "number" },
+        "recall@12": { "type": "number" },
+        "recall@50": { "type": "number" },
+        "pool_coverage": { "type": "number" }
+      },
+      "additionalProperties": { "type": "number" }
+    },
+    "n_customers": { "type": "integer", "minimum": 0 },
+    "seed": { "type": ["integer", "null"] },
+    "n_last": { "type": ["integer", "null"] },
+    "half_life_days": { "type": ["number", "null"] },
+    "split_rule_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "split_ids_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "cold_start": { "type": "integer" },
+    "missing_images": { "type": "integer" },
+    "gpu": { "type": ["string", "null"] },
+    "gpu_power_limit_w": { "type": ["number", "null"] }
+  },
+  "not": {
+    "anyOf": [
+      { "required": ["customer_id"] }, { "required": ["customer_ids"] }, { "required": ["customers"] },
+      { "required": ["article_id"] }, { "required": ["article_ids"] }, { "required": ["articles"] },
+      { "required": ["ids"] }, { "required": ["id_list"] }
+    ]
+  }
+}

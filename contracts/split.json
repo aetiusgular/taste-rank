@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "dataset": "H&M Personalized Fashion Recommendations (Kaggle), transactions_train.csv",
+  "anchor": {
+    "date_column": "t_dat",
+    "expected_min_t_dat": "2018-09-20",
+    "expected_max_t_dat": "2020-09-22"
+  },
+  "windows": {
+    "heldout": { "start": "2020-09-16", "end": "2020-09-22" },
+    "dev": { "start": "2020-09-09", "end": "2020-09-15" }
+  },
+  "train_cutoff": "2020-09-09",
+  "pool_days_before_window": 84,
+  "pop_days_before_window": 7,
+  "customer_hash": {
+    "algorithm": "sha256",
+    "message": "<salt>:<customer_id>, UTF-8",
+    "salt": "taste-rank/split/v1",
+    "bucket": "int(first 16 hex digits of the digest, base 16) mod 100",
+    "buckets": { "train": [0, 79], "dev": [80, 89], "heldout": [90, 99] }
+  },
+  "eligible": "bucket matches the split, at least one purchase before window start, at least one purchase in [start, end]",
+  "history_grid": { "n_last": [5, 10, 20, 50], "half_life_days": [7, 30, 90, null] },
+  "history_default": { "n_last": 20, "half_life_days": 30 },
+  "seeds": [0, 1, 2, 3, 4]
+}
