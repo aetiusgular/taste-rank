@@ -59,7 +59,7 @@ R = distinct articles the customer bought in the window, in the pool or not. The
 - Every metric is a mean over evaluated customers (each customer weighs the same).
 - Hand-derived cases: `fixtures/metrics_cases.json`.
 
-**Per-category tables.** For each `product_group_name` g: the customers with at least one purchase of a g article in the window; their ranking filtered to pool articles in g; R filtered to g articles (pool or not). Category comes from `articles.csv`. Scores per table, never a composite (section 6, item 6).
+**Per-category tables.** For each `product_group_name` g: the customers with at least one purchase of a g article in the window; their ranking filtered to pool articles in g; R filtered to g articles (pool or not). Category comes from `articles.csv`. The category row's `pool_coverage` is `pool_coverage` over that table's customers, with R filtered to g and the pool filtered to g; `eval.sh` computes it with `pool_coverage`, and `category_metrics` keeps the return keys in `contracts/seams.md`. Scores per table, never a composite (section 6, item 6).
 
 ## Rows and bands
 
