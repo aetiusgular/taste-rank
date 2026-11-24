@@ -1,0 +1,23 @@
+{
+  "$comment": "Pinned models and seeds (BUILD_OUTLINE.md section 6, item 4). Revisions re-read from the Hugging Face API on 2026-11-24. The SigLIP model loads remote code; P4's security review reads it at this commit before anything runs it.",
+  "models": [
+    {
+      "row": "E0-siglip / E1-siglip",
+      "id": "Marqo/marqo-fashionSigLIP",
+      "revision": "c56244cc94f92419e8369fa71efdaf403b124ce8",
+      "licence": "Apache-2.0",
+      "loader": "open_clip hf-hub (trust_remote_code)",
+      "image_tower": "timm vit_base_patch16_siglip_224, image_size 224 (open_clip_config.json at this revision)",
+      "lora_targets": ["attn.qkv", "attn.proj"],
+      "lora_targets_status": "from the timm module names; confirmed on the loaded model in P5"
+    },
+    {
+      "row": "E0-fclip",
+      "id": "patrickjohncyh/fashion-clip",
+      "revision": "7e3ba62ce16b379a1ab479346b66f192e76f51b7",
+      "licence": "MIT",
+      "loader": "transformers CLIPModel"
+    }
+  ],
+  "seeds": [0, 1, 2, 3, 4]
+}

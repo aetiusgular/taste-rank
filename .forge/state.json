@@ -2,7 +2,7 @@
   "project": "taste-rank",
   "code": "TR",
   "target": "Krea",
-  "phase": "P1",
+  "phase": "P2",
   "round": 1,
   "phases": [
     "P1",
@@ -29,7 +29,8 @@
     "P6": 1
   },
   "sessions_used": {
-    "P1": 1
+    "P1": 1,
+    "P2": 1
   },
   "needs_box": [
     "P5"

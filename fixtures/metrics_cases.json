@@ -1,0 +1,190 @@
+{
+ "$comment": "Hand-derived metric cases (contracts/eval.md, Metrics). `ranked` is the same list for every case: a01..a60 in rank order. Each `*_expr` is the hand formula; the number next to it is that formula evaluated. tests/contracts checks the two agree; tests/red checks the eval lane against the numbers.",
+ "ranked": [
+  "a01",
+  "a02",
+  "a03",
+  "a04",
+  "a05",
+  "a06",
+  "a07",
+  "a08",
+  "a09",
+  "a10",
+  "a11",
+  "a12",
+  "a13",
+  "a14",
+  "a15",
+  "a16",
+  "a17",
+  "a18",
+  "a19",
+  "a20",
+  "a21",
+  "a22",
+  "a23",
+  "a24",
+  "a25",
+  "a26",
+  "a27",
+  "a28",
+  "a29",
+  "a30",
+  "a31",
+  "a32",
+  "a33",
+  "a34",
+  "a35",
+  "a36",
+  "a37",
+  "a38",
+  "a39",
+  "a40",
+  "a41",
+  "a42",
+  "a43",
+  "a44",
+  "a45",
+  "a46",
+  "a47",
+  "a48",
+  "a49",
+  "a50",
+  "a51",
+  "a52",
+  "a53",
+  "a54",
+  "a55",
+  "a56",
+  "a57",
+  "a58",
+  "a59",
+  "a60"
+ ],
+ "cases": [
+  {
+   "name": "single hit at rank 1",
+   "relevant": [
+    "a01"
+   ],
+   "ndcg@10_expr": "1/log2(2) / (1/log2(2))",
+   "ndcg@10": 1.0,
+   "recall@12_expr": "1/1",
+   "recall@12": 1.0,
+   "recall@50_expr": "1/1",
+   "recall@50": 1.0
+  },
+  {
+   "name": "single hit at rank 2",
+   "relevant": [
+    "a02"
+   ],
+   "ndcg@10_expr": "(1/log2(3)) / (1/log2(2))",
+   "ndcg@10": 0.6309297535714575,
+   "recall@12_expr": "1/1",
+   "recall@12": 1.0,
+   "recall@50_expr": "1/1",
+   "recall@50": 1.0
+  },
+  {
+   "name": "hits at ranks 1 and 3",
+   "relevant": [
+    "a01",
+    "a03"
+   ],
+   "ndcg@10_expr": "(1/log2(2) + 1/log2(4)) / (1/log2(2) + 1/log2(3))",
+   "ndcg@10": 0.9197207891481876,
+   "recall@12_expr": "2/2",
+   "recall@12": 1.0,
+   "recall@50_expr": "2/2",
+   "recall@50": 1.0
+  },
+  {
+   "name": "only purchase is outside the pool, never ranked",
+   "relevant": [
+    "zz-out-of-pool"
+   ],
+   "ndcg@10_expr": "0",
+   "ndcg@10": 0,
+   "recall@12_expr": "0/1",
+   "recall@12": 0.0,
+   "recall@50_expr": "0/1",
+   "recall@50": 0.0
+  },
+  {
+   "name": "hit at rank 1 plus an out-of-pool purchase (ideal DCG counts both)",
+   "relevant": [
+    "a01",
+    "zz-out-of-pool"
+   ],
+   "ndcg@10_expr": "(1/log2(2)) / (1/log2(2) + 1/log2(3))",
+   "ndcg@10": 0.6131471927654584,
+   "recall@12_expr": "1/2",
+   "recall@12": 0.5,
+   "recall@50_expr": "1/2",
+   "recall@50": 0.5
+  },
+  {
+   "name": "hit at rank 11: outside nDCG@10, inside recall@12",
+   "relevant": [
+    "a11"
+   ],
+   "ndcg@10_expr": "0",
+   "ndcg@10": 0,
+   "recall@12_expr": "1/1",
+   "recall@12": 1.0,
+   "recall@50_expr": "1/1",
+   "recall@50": 1.0
+  },
+  {
+   "name": "hit at rank 13: outside recall@12, inside recall@50",
+   "relevant": [
+    "a13"
+   ],
+   "ndcg@10_expr": "0",
+   "ndcg@10": 0,
+   "recall@12_expr": "0/1",
+   "recall@12": 0.0,
+   "recall@50_expr": "1/1",
+   "recall@50": 1.0
+  },
+  {
+   "name": "twelve purchases, all in the top 12 (ideal DCG stops at 10)",
+   "relevant": [
+    "a01",
+    "a02",
+    "a03",
+    "a04",
+    "a05",
+    "a06",
+    "a07",
+    "a08",
+    "a09",
+    "a10",
+    "a11",
+    "a12"
+   ],
+   "ndcg@10_expr": "1",
+   "ndcg@10": 1,
+   "recall@12_expr": "12/12",
+   "recall@12": 1.0,
+   "recall@50_expr": "12/12",
+   "recall@50": 1.0
+  },
+  {
+   "name": "hits at ranks 2 and 10 of three purchases",
+   "relevant": [
+    "a02",
+    "a10",
+    "a51"
+   ],
+   "ndcg@10_expr": "(1/log2(3) + 1/log2(11)) / (1/log2(2) + 1/log2(3) + 1/log2(4))",
+   "ndcg@10": 0.431733884398313,
+   "recall@12_expr": "2/3",
+   "recall@12": 0.6666666666666666,
+   "recall@50_expr": "2/3",
+   "recall@50": 0.6666666666666666
+  }
+ ]
+}

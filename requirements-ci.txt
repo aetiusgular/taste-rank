@@ -1,0 +1,9 @@
+# CPU test dependencies (scripts/setup.sh). torch comes from the PyTorch CPU
+# index first (setup.sh), so the version here only pins it. Box-only
+# dependencies (open_clip for the real encoders) are added in P5.
+torch==2.15.0
+peft==0.22.0
+polars==2.1.0
+numpy==2.5.5
+pillow==13.0.0
+pytest==9.2.0

@@ -28,12 +28,12 @@ Why this build: Krea is hiring an ML engineer to build personalization "from the
 - **Time:** a cutoff date T. History window: purchases before T. Held-out window: the 7 days from T (the competition's own horizon). A dev cutoff T_dev = T − 7 days gives the dev split, same shape.
 - **Customers:** customers with at least one purchase in the history window and at least one in the held-out window are split by a fixed hash of `customer_id` into train (fine-tuning only), dev and heldout. Heldout customers are never seen in training, in either window.
 - **Training data** comes only from train customers and only from before T_dev. Tuning reads dev only. Heldout runs once per release (BUILD_OUTLINE.md section 6).
-- P2 writes `contracts/eval.md` with T, T_dev, the hash rule, the counts, and `split-sha256` over the id lists. The id lists themselves stay on the box (no `split-path`), since they are derived from the competition data.
+- P2 wrote `contracts/eval.md` and `contracts/split.json`: T, T_dev, the hash rule and the pool and POP windows. No data has been read yet, so `split-sha256` covers the rule file, and the id-list hash and counts come from the first box run (P5), carried in every results row as `split_ids_sha256`. The id lists stay on the box, since they are derived from the competition data.
 
 ## Ranking task
 
 - **Candidate pool:** articles with at least one sale in the 12 weeks before the window starts. Known before the window, so no leakage. Purchases outside the pool count as misses, and the pool coverage of held-out purchases is reported.
-- **Customer vector:** recency-weighted mean of the encoder's image embeddings of the customer's last N history purchases (N and the decay frozen in P2 from dev).
+- **Customer vector:** recency-weighted mean of the encoder's image embeddings of the customer's last N history purchases. P2 had no data, so N and the decay have a blind default and a fixed grid in `contracts/split.json`; P5 may pick one grid point on dev with E0 only, before any E1 run (`contracts/eval.md`).
 - **Score:** cosine similarity between the customer vector and each candidate's image embedding. Top 12 and top 50 kept.
 - **Relevant set:** distinct articles the customer bought in the window.
 

@@ -1,0 +1,261 @@
+{
+ "$comment": "Red tests written in P2 (tests/red/README.md). One per corner case per lane. expect is the stated reason each fails before its lane lands.",
+ "tests": [
+  {
+   "id": "ids-keep-leading-zeros",
+   "lane": "P3a",
+   "case": "ingest keeps article ids as 10-character zero-padded strings, t_dat as a date, and adds row_idx in file order",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_ids_keep_leading_zeros",
+   "expect": "NotImplementedError: P3a: load_transactions",
+   "timeout": 300
+  },
+  {
+   "id": "empty-transactions-file",
+   "lane": "P3a",
+   "case": "a header-only transactions file gives zero rows with the contract schema, not an error",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_empty_transactions_file",
+   "expect": "NotImplementedError: P3a: load_transactions",
+   "timeout": 300
+  },
+  {
+   "id": "bucket-follows-frozen-rule",
+   "lane": "P3a",
+   "case": "customer buckets and split names follow the sha256 rule frozen in contracts/split.json",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_bucket_follows_frozen_rule",
+   "expect": "NotImplementedError: P3a: customer_bucket",
+   "timeout": 300
+  },
+  {
+   "id": "anchor-mismatch-refused",
+   "lane": "P3a",
+   "case": "a transactions file whose last day differs from the rule's expected_max_t_dat is refused",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_anchor_mismatch_refused",
+   "expect": "NotImplementedError: P3a: load_transactions",
+   "timeout": 300
+  },
+  {
+   "id": "window-boundaries",
+   "lane": "P3a",
+   "case": "the window's first and last days count as relevant; the day before is history",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_window_boundaries",
+   "expect": "NotImplementedError: P3a: build_split",
+   "timeout": 300
+  },
+  {
+   "id": "dev-split-ignores-later-days",
+   "lane": "P3a",
+   "case": "the dev split never reads purchases after the dev window (heldout days are invisible to it)",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_dev_split_ignores_later_days",
+   "expect": "NotImplementedError: P3a: build_split",
+   "timeout": 300
+  },
+  {
+   "id": "eligibility-and-cold-start",
+   "lane": "P3a",
+   "case": "only customers of the split's bucket with history and a window purchase are evaluated; window-only customers are counted as cold start",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_eligibility_and_cold_start",
+   "expect": "NotImplementedError: P3a: build_split",
+   "timeout": 300
+  },
+  {
+   "id": "pool-has-no-leakage",
+   "lane": "P3a",
+   "case": "the pool is articles sold in the 84 days before the window; an article sold only in the window is not in it but still counts as relevant",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_pool_has_no_leakage",
+   "expect": "NotImplementedError: P3a: build_split",
+   "timeout": 300
+  },
+  {
+   "id": "relevant-dedups-repeats",
+   "lane": "P3a",
+   "case": "repeat purchases of one article in the window count once",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_relevant_dedups_repeats",
+   "expect": "NotImplementedError: P3a: build_split",
+   "timeout": 300
+  },
+  {
+   "id": "pop-counts-last-week-only",
+   "lane": "P3a",
+   "case": "POP counts only the 7 days before the window, across all customers",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_pop_counts_last_week_only",
+   "expect": "NotImplementedError: P3a: build_split",
+   "timeout": 300
+  },
+  {
+   "id": "history-order-and-ties",
+   "lane": "P3a",
+   "case": "history is most recent first; same-day purchases order by file row, later first",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_history_order_and_ties",
+   "expect": "NotImplementedError: P3a: build_split",
+   "timeout": 300
+  },
+  {
+   "id": "training-pairs-train-bucket-before-cutoff",
+   "lane": "P3a",
+   "case": "training pairs come only from train-bucket customers, before train_cutoff, with history strictly before the target day",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_training_pairs_train_bucket_before_cutoff",
+   "expect": "NotImplementedError: P3a: training_pairs",
+   "timeout": 300
+  },
+  {
+   "id": "split-ids-sha256-canonical",
+   "lane": "P3a",
+   "case": "the split id-list hash uses the canonical line format in contracts/eval.md",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_data.py::test_split_ids_sha256_canonical",
+   "expect": "NotImplementedError: P3a: split_ids_sha256",
+   "timeout": 300
+  },
+  {
+   "id": "customer-vector-single-purchase",
+   "lane": "P3b",
+   "case": "one purchase gives its own normalized embedding",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_train.py::test_customer_vector_single_purchase",
+   "expect": "NotImplementedError: P3b: customer_vector",
+   "timeout": 900
+  },
+  {
+   "id": "customer-vector-recency-weights",
+   "lane": "P3b",
+   "case": "a purchase one half-life old weighs half; embeddings are normalized before weighting",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_train.py::test_customer_vector_recency_weights",
+   "expect": "NotImplementedError: P3b: customer_vector",
+   "timeout": 900
+  },
+  {
+   "id": "customer-vector-no-decay",
+   "lane": "P3b",
+   "case": "an infinite half-life gives the plain mean, repeats counted per purchase",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_train.py::test_customer_vector_no_decay",
+   "expect": "NotImplementedError: P3b: customer_vector",
+   "timeout": 900
+  },
+  {
+   "id": "info-nce-hand-value",
+   "lane": "P3b",
+   "case": "in-batch InfoNCE equals the hand value log(1 + e^(-1/T)) on a 2x2 identity batch",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_train.py::test_info_nce_hand_value",
+   "expect": "NotImplementedError: P3b: info_nce",
+   "timeout": 900
+  },
+  {
+   "id": "lora-only-attention-trainable",
+   "lane": "P3b",
+   "case": "LoRA wraps exactly the attention qkv and proj layers; every other weight is frozen",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_train.py::test_lora_only_attention_trainable",
+   "expect": "NotImplementedError: P3b: apply_lora",
+   "timeout": 900
+  },
+  {
+   "id": "seed-determinism",
+   "lane": "P3b",
+   "case": "the same seed gives identical LoRA weights and losses on CPU; another seed differs",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_train.py::test_seed_determinism",
+   "expect": "NotImplementedError: P3b: train",
+   "timeout": 900
+  },
+  {
+   "id": "checkpoint-outside-repo",
+   "lane": "P3b",
+   "case": "a checkpoint directory inside the repo is refused (weights are never published)",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_train.py::test_checkpoint_outside_repo",
+   "expect": "NotImplementedError: P3b: train",
+   "timeout": 900
+  },
+  {
+   "id": "refuses-pairs-after-cutoff",
+   "lane": "P3b",
+   "case": "a training pair dated on or after train_cutoff is refused",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_train.py::test_refuses_pairs_after_cutoff",
+   "expect": "NotImplementedError: P3b: train",
+   "timeout": 900
+  },
+  {
+   "id": "loss-goes-down",
+   "lane": "P3b",
+   "case": "40 steps on the fixture lower the mean loss of the last 5 steps below the first 5",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_train.py::test_loss_goes_down",
+   "expect": "NotImplementedError: P3b: train",
+   "timeout": 900
+  },
+  {
+   "id": "ndcg-matches-hand-values",
+   "lane": "P3c",
+   "case": "nDCG@10 matches the hand-derived cases, including out-of-pool purchases in the ideal DCG",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_ndcg_matches_hand_values",
+   "expect": "NotImplementedError: P3c: ndcg_at_k",
+   "timeout": 900
+  },
+  {
+   "id": "recall-matches-hand-values",
+   "lane": "P3c",
+   "case": "recall@12 and recall@50 match the hand-derived cases",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_recall_matches_hand_values",
+   "expect": "NotImplementedError: P3c: recall_at_k",
+   "timeout": 900
+  },
+  {
+   "id": "rank-ties-by-article-id",
+   "lane": "P3c",
+   "case": "cosine ties are broken by article id ascending",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_rank_ties_by_article_id",
+   "expect": "NotImplementedError: P3c: rank",
+   "timeout": 900
+  },
+  {
+   "id": "pool-coverage",
+   "lane": "P3c",
+   "case": "pool coverage is in-pool relevant pairs over all relevant pairs",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_pool_coverage",
+   "expect": "NotImplementedError: P3c: pool_coverage",
+   "timeout": 900
+  },
+  {
+   "id": "pop-ranking-ties",
+   "lane": "P3c",
+   "case": "POP ranks by count, ties by article id ascending",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_pop_ranking_ties",
+   "expect": "NotImplementedError: P3c: pop_ranking",
+   "timeout": 900
+  },
+  {
+   "id": "category-table",
+   "lane": "P3c",
+   "case": "per-category tables filter both the ranking and the relevant set to the category; customers without a purchase in it are left out",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_category_table",
+   "expect": "NotImplementedError: P3c: category_metrics",
+   "timeout": 900
+  },
+  {
+   "id": "band-and-lift",
+   "lane": "P3c",
+   "case": "bands are mean, min and max; a lift band crossing zero is 'no lift', all below zero is 'worse'; fewer than five seeds is refused",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_band_and_lift",
+   "expect": "NotImplementedError: P3c: band",
+   "timeout": 900
+  },
+  {
+   "id": "results-row-fields",
+   "lane": "P3c",
+   "case": "results rows carry the section 6 fields, machine from FORGE_MACHINE_FILE, and refuse id-list keys",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_results_row_fields",
+   "expect": "NotImplementedError: P3c: make_row",
+   "timeout": 900
+  },
+  {
+   "id": "machine-read-at-run-time",
+   "lane": "P3c",
+   "case": "without FORGE_MACHINE_FILE the machine label is read from /proc at run time",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_machine_read_at_run_time",
+   "expect": "NotImplementedError: P3c: read_machine",
+   "timeout": 900
+  },
+  {
+   "id": "eval-sh-fixture-run",
+   "lane": "P3c",
+   "case": "scripts/eval.sh --fixture runs POP and E0 on the fixture dev split and writes valid rows",
+   "cmd": ".venv/bin/python -m pytest -q tests/red/test_eval.py::test_eval_sh_fixture_run",
+   "expect": "eval.sh --fixture wrote no results rows",
+   "timeout": 900
+  }
+ ]
+}
