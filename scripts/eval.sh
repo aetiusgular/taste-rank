@@ -10,6 +10,27 @@
 # repo). The landrun pass gets FORGE_SKIP_COLUMNS (comma list) and must skip
 # them; each such column then runs this script again with FORGE_COLUMN set
 # to its name (srt: inside derm run --boundary srt) and runs only that one.
-# P5 replaces this stub.
-echo "not an eval phase"
-exit 0
+#
+#   scripts/eval.sh --fixture <dir>   POP and E0-tiny on fixtures/shop_like,
+#                                     dev split only; rows go to <dir>/*.jsonl
+#   scripts/eval.sh                   the box pipeline; P5 wires it. Until
+#                                     then it prints "not an eval phase".
+set -euo pipefail
+cd "$(dirname "$0")/.."
+py=.venv/bin/python
+[[ -x "$py" ]] || py=python3
+
+case "${1:-}" in
+  --fixture)
+    [[ $# -eq 2 && -n "$2" ]] || { echo "usage: scripts/eval.sh --fixture <dir>" >&2; exit 2; }
+    exec "$py" -m tasterank.eval.run --fixture "$2"
+    ;;
+  "")
+    echo "not an eval phase"
+    exit 0
+    ;;
+  *)
+    echo "usage: scripts/eval.sh [--fixture <dir>]" >&2
+    exit 2
+    ;;
+esac

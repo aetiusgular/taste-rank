@@ -2,8 +2,8 @@
   "project": "taste-rank",
   "code": "TR",
   "target": "Krea",
-  "phase": "P3b",
-  "round": 3,
+  "phase": "P3c",
+  "round": 1,
   "phases": [
     "P1",
     "P2",
@@ -32,7 +32,8 @@
     "P1": 1,
     "P2": 1,
     "P3a": 1,
-    "P3b": 1
+    "P3b": 1,
+    "P3c": 1
   },
   "needs_box": [
     "P5"
