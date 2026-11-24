@@ -83,11 +83,10 @@ def encoder_rankings(
 
     hist = last_n_history(split.history, n_last)
     need = list(split.pool) + [p.article_id for c in split.customers for p in hist.get(c, [])]
-    embs, _ = embed_articles(encoder, need, images)
+    # missing: distinct articles (pool and history together) with no image, each counted once
+    embs, missing = embed_articles(encoder, need, images)
     scored = [a for a in split.pool if a in embs]
     unscored = [a for a in split.pool if a not in embs]
-    missing_pool = len(unscored)
-    missing_hist = len({p.article_id for c in split.customers for p in hist.get(c, []) if p.article_id not in embs})
     if not scored:
         raise ValueError("no pool article has an image")
     dim = embs[scored[0]].shape[0]
@@ -106,7 +105,7 @@ def encoder_rankings(
     ranked = ev.rank_many(torch.stack(vecs), scored, cand, None) if vecs else []
     tail = sorted(unscored)
     rankings = {c: r + tail for c, r in zip(split.customers, ranked)}
-    return rankings, {"missing_images": missing_pool + missing_hist, "no_history_image_customers": no_image_customers}
+    return rankings, {"missing_images": missing, "no_history_image_customers": no_image_customers}
 
 
 def pop_rankings(split: EvalSplit) -> dict[str, list[str]]:

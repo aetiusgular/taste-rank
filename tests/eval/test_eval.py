@@ -324,3 +324,24 @@ def test_eval_sh_usage_errors():
         assert p.returncode == 2 and "usage" in p.stderr
     p = subprocess.run(["bash", "scripts/eval.sh"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=60)
     assert p.returncode == 0 and "not an eval phase" in p.stdout
+
+
+def test_missing_image_in_pool_and_history_counts_once():
+    # TR-P3c-r1-C1: h1 is both a pool article and c1's history item; with no image it is one missing article.
+    split = _toy_split()
+    split = EvalSplit(
+        name=split.name, window_start=split.window_start, window_end=split.window_end, customers=split.customers,
+        history=split.history, relevant=split.relevant, pool=["h1", "p2", "p3"], pop_counts={},
+    )
+    imgs = {"p2": torch.ones(3, 2, 2), "p3": torch.zeros(3, 2, 2) + torch.tensor([1.0, 0, 0]).view(3, 1, 1)}
+    rankings, counts = er.encoder_rankings(split, _Mean(), imgs.get, 5, None)
+    assert counts == {"missing_images": 1, "no_history_image_customers": 2}
+    assert rankings["c1"][-1] == "h1"
+
+
+def test_eval_sh_fixture_dir_is_relative_to_caller(tmp_path):
+    # TR-P3c-r1-C2: a relative --fixture dir resolves against the caller's directory, not the repo root.
+    p = subprocess.run(["bash", str(REPO_ROOT / "scripts" / "eval.sh"), "--fixture", "rel"], cwd=tmp_path, capture_output=True, text=True, timeout=300)
+    assert p.returncode == 0, p.stderr
+    assert list((tmp_path / "rel").glob("fixture-*.jsonl")) and (tmp_path / "rel" / "summary.md").is_file()
+    assert not (REPO_ROOT / "rel").exists()

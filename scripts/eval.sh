@@ -16,6 +16,10 @@
 #   scripts/eval.sh                   the box pipeline; P5 wires it. Until
 #                                     then it prints "not an eval phase".
 set -euo pipefail
+# --fixture <dir> is relative to the caller's directory, so resolve it before the cd.
+if [[ "${1:-}" == --fixture && $# -eq 2 && -n "$2" && "$2" != /* ]]; then
+  set -- "$1" "$PWD/$2"
+fi
 cd "$(dirname "$0")/.."
 py=.venv/bin/python
 [[ -x "$py" ]] || py=python3
