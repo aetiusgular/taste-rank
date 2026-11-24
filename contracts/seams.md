@@ -16,6 +16,8 @@ The split, metric and row rules these functions follow are in `contracts/eval.md
 | `build_split(transactions, rule, which)` | `EvalSplit` | windows, eligibility, cold start, pool, POP counts, relevant sets. Does not call `check_anchor` (the pipeline does). |
 | `last_n_history(history, n)` | dict customer_id → list of `Purchase`, most recent first | ordering in eval.md |
 | `training_pairs(transactions, rule, n_last)` | list of `TrainPair` | eval.md "Training pairs" |
+| `iter_training_pairs(transactions, rule, n_last)` | iterator of `TrainPair` | same pairs and order as `training_pairs` (customer id, then file order), one at a time. Added in P4 (RFI-P3a-1). |
+| `scan_transactions(path)` | polars LazyFrame | lazy form of `load_transactions`. Added in P4. |
 | `split_ids_sha256(transactions, rule)` | 64-hex string | eval.md "Canonical id-list hash" |
 
 ## P3b train: `tasterank.train` (`src/tasterank/train/`)
@@ -27,6 +29,8 @@ The split, metric and row rules these functions follow are in `contracts/eval.md
 | `info_nce(customer_vecs [B, d], target_vecs [B, d], temperature)` | scalar tensor | inputs normalized inside; eval.md "Training pairs" |
 | `apply_lora(encoder, cfg)` | module | LoRA (peft) on modules whose names end in `cfg.target_modules`; every other parameter frozen |
 | `train(encoder, pairs, images, cfg)` | `TrainResult` | refuses a pair with `target_date >= cfg.train_cutoff` (`ValueError` naming train_cutoff) and an `out_dir` inside the repo (`ValueError` "inside the repo"); same seed, same result on CPU; writes the LoRA weights under `out_dir` only |
+| `lora_state_dict(model)` | dict name → tensor | the trainable (LoRA) tensors, detached, on CPU. Added in P4 (RFI-P3b-1). |
+| `load_lora(encoder, checkpoint, cfg)` | module, eval mode | `apply_lora(encoder, cfg)`, then the tensors of `<out_dir>/lora.pt` loaded with `weights_only=True`; `ValueError` when the keys differ from the LoRA layout. `cfg` must carry the training run's `rank`, `alpha` and `target_modules` (they are in `lora.json`). Added in P4 (RFI-P3b-1). |
 
 `TrainConfig`, `TrainResult`, `TrainPair`, `Purchase`, `ImageSource` and `Encoder` are in `seams.py`. An `Encoder` maps pixels `[B, 3, H, W]` in [0, 1] to embeddings `[B, D]`; the real encoders' preprocessing (resize, normalization) is wrapped inside the encoder in P5, so lanes never see it.
 
@@ -39,14 +43,28 @@ The split, metric and row rules these functions follow are in `contracts/eval.md
 | Function | Returns | Rule |
 |---|---|---|
 | `rank(customer_vec, candidate_ids, candidate_embs, k)` | top-k ids | cosine, ties by id ascending |
+| `rank_many(customer_vecs, candidate_ids, candidate_embs, k=None)` | one top-k list per customer | `rank` for a batch [C, d]; `k` None keeps the whole pool. Added in P4 (RFI-P3c-1). |
 | `ndcg_at_k(ranked, relevant, k)`, `recall_at_k(ranked, relevant, k)` | float | eval.md "Metrics" |
 | `pool_coverage(relevant, pool)` | float | eval.md "Metrics" |
 | `pop_ranking(pop_counts, k)` | top-k ids | count descending, ties by id ascending |
 | `category_metrics(rankings, relevant, article_group)` | `{group: {"ndcg@10", "recall@12", "recall@50", "n_customers"}}` | eval.md "Per-category tables"; `rankings` holds each customer's full pool ranking |
+| `table_metrics(rankings, relevant)` | `{"ndcg@10", "recall@12", "recall@50", "n_customers"}` | one table's means over customers. Added in P4 (RFI-P3c-1). |
 | `band(values)` | `{"mean", "min", "max", "n"}` | |
 | `lift_band(e1_by_seed, e0)` | band plus `"verdict"`: `lift`, `no lift` or `worse` | five seeds or `ValueError` |
 | `read_machine()` | str | eval.md "Results rows" |
-| `make_row(**fields)` | dict | fills `run_id`, `git_sha` (`git rev-parse HEAD`), `machine`, `date` |
-| `write_rows(path, rows)` | None | JSON lines; `ValueError` "forbidden" on any `FORBIDDEN_RESULT_KEYS` key |
+| `make_row(**fields)` | dict | fills `run_id` and `date` unless given; always reads `git_sha` (`git rev-parse HEAD`), `git_dirty` and `machine` itself and refuses them from the caller |
+| `read_gpu()` | `(name, power limit W)` or `(None, None)` | first GPU from `nvidia-smi`. Added in P4 (RFI-P3c-1). |
+| `new_run_id()` | str | UTC time plus 8 random hex digits. Added in P4 (RFI-P3c-1). |
+| `check_row(row)` | None | the checks `write_rows` runs on each row; `ValueError` on the first failure. Added in P4 (RFI-P3c-1). |
+| `write_rows(path, rows)` | None | appends JSON lines; checks every row first and writes none when one fails; `ValueError` "forbidden" on any `FORBIDDEN_RESULT_KEYS` key at any depth |
 
-`scripts/eval.sh` (owned by P3c) keeps its box contract (header comment). With `--fixture <dir>` it runs POP and `E0-tiny` on `fixtures/shop_like` (rule `fixtures/shop_like/split.json`), dev split only, and writes rows to `<dir>`. With no arguments on the box it runs the P5 pipeline; until P5 wires the real encoders it prints "not an eval phase" and exits 0.
+`scripts/eval.sh` (owned by P3c) keeps its box contract (header comment). With `--fixture <dir>` it runs POP and `E0-tiny` on `fixtures/shop_like` (rule `fixtures/shop_like/split.json`), dev split only, and writes rows to `<dir>`. With no arguments on the box it runs the P5 pipeline; until P5 wires the real encoders it prints "not an eval phase" and exits 0. `--fixture` refuses an output folder at or under `results/` (P4, SECURITY.md T-8). The pipeline itself is `tasterank.eval.run` (`encoder_rankings`, `pop_rankings`, `evaluate`, `run_fixture`), which P5 extends for the real encoders.
+
+## P4: model folders, `tasterank.models` (`src/tasterank/models.py`)
+
+| Function | Returns | Rule |
+|---|---|---|
+| `model_entry(model_id)` | the models.lock entry | `KeyError` if not pinned |
+| `verify_model_dir(folder, entry)` | dict file name → path | the folder holds exactly the entry's `files`, each with its pinned sha256: no other file, no subfolder, no symlink. `ValueError` otherwise. Run before any loader reads the folder. |
+
+`python -m tasterank.models <model id> <folder>` is the same check from the shell (exit 0 ok, 1 refused). The real encoders load only from a verified folder: SigLIP through open_clip `local-dir:`, fashion-clip through transformers with `local_files_only=True` and `use_safetensors=True`. Never `trust_remote_code`, never `hf-hub:` (models.lock).

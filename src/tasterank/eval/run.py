@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import re
 import sys
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -23,6 +24,9 @@ from tasterank.seams import REPO_ROOT, EvalSplit, ImageSource, load_split_rule
 FIXTURE_DIR = REPO_ROOT / "fixtures" / "shop_like"
 TINY_SEED = 1234
 EMBED_BATCH = 256
+# Article ids name image files, so only plain ids are accepted (contracts/eval.md, "Missing images").
+ARTICLE_ID_RE = re.compile(r"[0-9A-Za-z_-]+")
+RESULTS_DIR = REPO_ROOT / "results"
 
 
 def image_dir_source(root: Path) -> Callable[[str], Any | None]:
@@ -32,6 +36,8 @@ def image_dir_source(root: Path) -> Callable[[str], Any | None]:
     from PIL import Image
 
     def load(article_id: str):
+        if not isinstance(article_id, str) or not ARTICLE_ID_RE.fullmatch(article_id):
+            raise ValueError(f"article id {article_id!r} is not [0-9A-Za-z_-]+; it would name a path outside the image folder")
         p = root / article_id[:3] / f"{article_id}.jpg"
         if not p.is_file():
             return None
@@ -152,8 +158,16 @@ def summary_md(rows: Sequence[Mapping[str, Any]]) -> str:
 
 
 def run_fixture(out_dir: Path, fixture: Path = FIXTURE_DIR) -> Path:
-    """POP and E0-tiny on the fixture's dev split; returns the results file written."""
+    """POP and E0-tiny on the fixture's dev split; returns the results file written.
+
+    Refuses an out_dir at or under the repo's results/ (symlinks resolved), so
+    synthetic rows never sit next to box rows. Checked before any work.
+    """
     import torch
+
+    res, target = RESULTS_DIR.resolve(), Path(out_dir).expanduser().resolve()
+    if target == res or res in target.parents:
+        raise ValueError(f"fixture rows go outside {res}; results/ holds box run rows only")
 
     from tasterank.data import build_split, check_anchor, load_articles, load_transactions, split_ids_sha256
     from tasterank.tiny import tiny_encoder
@@ -212,7 +226,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="tasterank.eval.run")
     ap.add_argument("--fixture", metavar="OUT_DIR", type=Path, required=True, help="run POP and E0-tiny on the fixture dev split")
     args = ap.parse_args(argv)
-    path = run_fixture(args.fixture)
+    try:
+        path = run_fixture(args.fixture)
+    except ValueError as e:
+        print(f"eval: {e}", file=sys.stderr)
+        return 2
     print(f"wrote {path}")
     print((args.fixture / "summary.md").read_text(), end="")
     return 0

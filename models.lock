@@ -1,13 +1,24 @@
 {
-  "$comment": "Pinned models and seeds (BUILD_OUTLINE.md section 6, item 4). Revisions re-read from the Hugging Face API on 2026-11-24. The SigLIP model loads remote code; P4's security review reads it at this commit before anything runs it.",
+  "$comment": "Pinned models and seeds (BUILD_OUTLINE.md section 6, item 4). Revisions re-read from the Hugging Face API on 2026-11-24. P4 (2026-11-24) read the SigLIP repo's remote code at this revision and does not run it: both encoders load from a host-downloaded folder holding exactly `files`, checked by tasterank.models.verify_model_dir (sha256 from the Hub's LFS oids and the downloaded small files). No trust_remote_code, no pickle weights, no Hub access from the sandbox.",
   "models": [
     {
       "row": "E0-siglip / E1-siglip",
       "id": "Marqo/marqo-fashionSigLIP",
       "revision": "c56244cc94f92419e8369fa71efdaf403b124ce8",
       "licence": "Apache-2.0",
-      "loader": "open_clip hf-hub (trust_remote_code)",
+      "loader": "open_clip create_model('local-dir:<verified folder>'); never trust_remote_code, never 'hf-hub:'",
+      "files": {
+        "open_clip_config.json": "bf024fad1091ed3280e48f8ff2dcdf68785abaa56dad02588c0feed1a6529c42",
+        "open_clip_model.safetensors": "88908200434959fa3154ef79d408aac33341e8797fe5ca8ca6f0463aab32e6b3"
+      },
+      "remote_code_read": {
+        "file": "marqo_fashionSigLIP.py",
+        "sha256": "344c299e1a33c544410fa99c6235f54eed6e20f680fccc28a97a268f3c01a83c",
+        "read": "2026-11-24, P4 security review (SECURITY.md, T-4 and T-6)",
+        "verdict": "not run: it calls open_clip create_model('hf-hub:Marqo/marqo-fashionSigLIP') with no revision, which downloads the repo's main branch and bypasses this pin; it also wraps the image tower in torch.inference_mode, which blocks LoRA gradients"
+      },
       "image_tower": "timm vit_base_patch16_siglip_224, image_size 224 (open_clip_config.json at this revision)",
+      "preprocess": "resize 224x224 bicubic (squash), mean 0.5, std 0.5 (open_clip_config.json preprocess_cfg)",
       "lora_targets": ["attn.qkv", "attn.proj"],
       "lora_targets_status": "from the timm module names; confirmed on the loaded model in P5"
     },
@@ -16,7 +27,13 @@
       "id": "patrickjohncyh/fashion-clip",
       "revision": "7e3ba62ce16b379a1ab479346b66f192e76f51b7",
       "licence": "MIT",
-      "loader": "transformers CLIPModel"
+      "loader": "transformers CLIPModel.from_pretrained(<verified folder>, local_files_only=True, use_safetensors=True); config.json has no auto_map, so no remote code",
+      "files": {
+        "config.json": "79595b5c6be8867e3ba42c34b1e6b9a0f957e549c1e7f43b5c6945f4f6f59471",
+        "preprocessor_config.json": "910e70b3956ac9879ebc90b22fb3bc8a75b6a0677814500101a4c072bd7857bd",
+        "model.safetensors": "4977e3a54929eccf065ce449aeaf296f0e5cb6b28e8798c3c97d67cb2f6dafc9"
+      },
+      "preprocess": "resize 224 bicubic, center crop 224, CLIP mean and std (preprocessor_config.json)"
     }
   ],
   "seeds": [0, 1, 2, 3, 4]

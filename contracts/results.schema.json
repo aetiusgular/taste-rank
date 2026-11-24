@@ -33,7 +33,9 @@
     "cold_start": { "type": "integer" },
     "missing_images": { "type": "integer" },
     "gpu": { "type": ["string", "null"] },
-    "gpu_power_limit_w": { "type": ["number", "null"] }
+    "gpu_power_limit_w": { "type": ["number", "null"] },
+    "git_dirty": { "type": "boolean", "description": "the worktree had uncommitted changes to tracked files when the row was made" },
+    "dataset": { "type": "string", "description": "which data the row measured; fixture rows name the synthetic fixture" }
   },
   "not": {
     "anyOf": [

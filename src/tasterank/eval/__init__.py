@@ -306,6 +306,12 @@ def check_row(row: Mapping[str, Any]) -> None:
         raise ValueError(f"results row split {row['split']!r} is not dev or heldout")
     if not isinstance(row["metrics"], Mapping) or not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in row["metrics"].values()):
         raise ValueError("results row metrics must map names to numbers")
+    n = row["n_customers"]
+    if not isinstance(n, int) or isinstance(n, bool) or n < 0:
+        raise ValueError(f"results row n_customers must be an integer >= 0, got {n!r}")
+    for key, kind in (("git_dirty", bool), ("dataset", str)):
+        if key in row and not isinstance(row[key], kind):
+            raise ValueError(f"results row {key} must be a {kind.__name__}")
     json.dumps(row, allow_nan=False)  # ValueError on NaN or inf
 
 
