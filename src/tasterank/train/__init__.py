@@ -36,7 +36,7 @@ def set_seed(seed: int) -> None:
 def _weights(ages_days: torch.Tensor, half_life_days: float | None) -> torch.Tensor:
     if half_life_days is None or math.isinf(half_life_days):
         return torch.ones_like(ages_days)
-    if half_life_days <= 0:
+    if not half_life_days > 0:  # also refuses NaN
         raise ValueError(f"half_life_days must be positive or inf, got {half_life_days}")
     return torch.pow(torch.full_like(ages_days, 0.5), ages_days / half_life_days)
 
@@ -113,6 +113,18 @@ def _check_out_dir(out_dir: Any) -> Path:
     return p
 
 
+def _half_life_for_meta(half_life_days: float | None) -> float | None:
+    """Checks cfg.half_life_days before any work; None (split.json `null`) and inf both mean equal weights."""
+    if half_life_days is None:
+        return None
+    hl = float(half_life_days)
+    if math.isinf(hl) and hl > 0:
+        return None
+    if not hl > 0:  # 0, negative, NaN, -inf
+        raise ValueError(f"half_life_days must be positive, inf or None, got {half_life_days}")
+    return hl
+
+
 def _check_pairs(pairs: Sequence[TrainPair], cfg: TrainConfig) -> None:
     if not pairs:
         raise ValueError("no training pairs")
@@ -185,13 +197,14 @@ def lora_state_dict(model: Any) -> dict[str, torch.Tensor]:
 def train(encoder: Any, pairs: Sequence[TrainPair], images: ImageSource, cfg: TrainConfig) -> TrainResult:
     """LoRA-fine-tunes `encoder` with in-batch InfoNCE on `pairs` (eval.md "Training pairs (E1)").
 
-    Refuses pairs on or after cfg.train_cutoff and an out_dir inside the repo,
-    both before any work. Same seed, same weights and losses on CPU. Writes
+    Refuses pairs on or after cfg.train_cutoff, an out_dir inside the repo and a
+    half_life_days that is not positive, inf or None, all before any work. Same seed, same weights and losses on CPU. Writes
     <out_dir>/lora.pt (the LoRA tensors) and <out_dir>/lora.json (config, losses).
     """
     out_dir = _check_out_dir(cfg.out_dir)
     pairs = list(pairs)
     _check_pairs(pairs, cfg)
+    half_life_meta = _half_life_for_meta(cfg.half_life_days)
     if cfg.steps < 1 or cfg.batch_size < 2:
         raise ValueError(f"steps must be >= 1 and batch_size >= 2, got {cfg.steps} and {cfg.batch_size}")
 
@@ -226,7 +239,7 @@ def train(encoder: Any, pairs: Sequence[TrainPair], images: ImageSource, cfg: Tr
         "dropout": cfg.dropout,
         "temperature": cfg.temperature,
         "n_last": cfg.n_last,
-        "half_life_days": None if math.isinf(cfg.half_life_days) else cfg.half_life_days,
+        "half_life_days": half_life_meta,
         "target_modules": list(cfg.target_modules),
         "train_cutoff": cfg.train_cutoff.isoformat(),
         "n_pairs": len(pairs),

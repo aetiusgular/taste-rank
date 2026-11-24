@@ -269,3 +269,17 @@ def test_base_weights_unchanged_by_training(tmp_path):
             continue
         key = n.replace(".base_layer", "")
         assert torch.equal(p, base[key]), n
+
+
+def test_null_half_life_trains_and_is_recorded(tmp_path):
+    # contracts/split.json history_grid has half_life_days null (= infinite); TR-P3b-r1-C1
+    r = train.train(tiny_encoder(), _pairs(), _images(), _cfg(tmp_path / "null", half_life_days=None, steps=2))
+    assert json.loads((tmp_path / "null" / "lora.json").read_text())["half_life_days"] is None
+    assert len(r.losses) == 2
+
+
+@pytest.mark.parametrize("bad", [0.0, -1.0, float("nan"), -math.inf])
+def test_bad_half_life_refused_before_any_write(tmp_path, bad):
+    with pytest.raises(ValueError, match="half_life_days"):
+        train.train(tiny_encoder(), _pairs(), _images(), _cfg(tmp_path / "bad", half_life_days=bad))
+    assert not (tmp_path / "bad").exists()
