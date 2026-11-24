@@ -34,9 +34,9 @@ def set_seed(seed: int) -> None:
 
 
 def _weights(ages_days: torch.Tensor, half_life_days: float | None) -> torch.Tensor:
-    if half_life_days is None or math.isinf(half_life_days):
+    if half_life_days is None or half_life_days == math.inf:
         return torch.ones_like(ages_days)
-    if not half_life_days > 0:  # also refuses NaN
+    if not half_life_days > 0:  # also refuses NaN and -inf
         raise ValueError(f"half_life_days must be positive or inf, got {half_life_days}")
     return torch.pow(torch.full_like(ages_days, 0.5), ages_days / half_life_days)
 

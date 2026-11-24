@@ -283,3 +283,10 @@ def test_bad_half_life_refused_before_any_write(tmp_path, bad):
     with pytest.raises(ValueError, match="half_life_days"):
         train.train(tiny_encoder(), _pairs(), _images(), _cfg(tmp_path / "bad", half_life_days=bad))
     assert not (tmp_path / "bad").exists()
+
+
+@pytest.mark.parametrize("bad", [0.0, -1.0, float("nan"), -math.inf])
+def test_customer_vector_refuses_bad_half_life(bad):
+    # -inf used to give equal weights here while train refused it; TR-P3b-r2-C1
+    with pytest.raises(ValueError, match="half_life_days"):
+        train.customer_vector(torch.ones(2, 4), torch.tensor([1.0, 2.0]), bad)
