@@ -20,7 +20,7 @@
       "image_tower": "timm vit_base_patch16_siglip_224, image_size 224 (open_clip_config.json at this revision)",
       "preprocess": "resize 224x224 bicubic (squash), mean 0.5, std 0.5 (open_clip_config.json preprocess_cfg)",
       "lora_targets": ["attn.qkv", "attn.proj"],
-      "lora_targets_status": "from the timm module names; confirmed on the loaded model in P5"
+      "lora_targets_status": "confirmed on the loaded model in P5 (2026-11-25): 24 modules, trunk.blocks.0-11.attn.qkv and .attn.proj; trunk.attn_pool.proj is not matched"
     },
     {
       "row": "E0-fclip",
