@@ -1,0 +1,20 @@
+# Box-only dependencies for scripts/eval.sh with no arguments (P5). Installed
+# by scripts/box-setup.sh into $TASTE_RANK_ROOT/venv on the host; the sandbox
+# has no network, so nothing is installed at run time. torch from PyPI (the
+# Linux wheel carries CUDA 13.2 libraries). Versions as resolved and run on
+# the box on 2026-11-25 (DECISIONS.md D-P5-6).
+torch==2.15.0
+torchvision==0.29.2
+peft==0.22.0
+polars==2.1.0
+numpy==2.5.5
+pillow==13.0.0
+open-clip-torch==4.2.2
+timm==1.0.31
+transformers==5.24.1
+safetensors==0.8.0
+huggingface-hub==2.4.0
+tokenizers==0.23.3
+ftfy==6.3.1
+regex==2026.11.23
+pytest==9.2.0

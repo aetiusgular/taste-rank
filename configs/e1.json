@@ -1,0 +1,16 @@
+{
+  "$comment": "E1 training settings, fixed in P5 before any box run and before any E1 result (DECISIONS.md D-P5-3). Not tuned: a change after the first box run is a tuning step on dev, logged as one, and heldout runs once per release. batch = clamp(max_images_per_step // (1 + n_last), batch_size_min, batch_size_max); n_last and the half-life come from the dev E0 grid (contracts/eval.md). The same train_customers sample (by sha256 of sample_salt:customer_id) serves every seed; the seed changes LoRA init and batch order.",
+  "steps": 1500,
+  "lr": 0.0001,
+  "rank": 8,
+  "alpha": 16.0,
+  "dropout": 0.0,
+  "temperature": 0.07,
+  "max_images_per_step": 704,
+  "batch_size_min": 8,
+  "batch_size_max": 32,
+  "train_customers": 20000,
+  "sample_salt": "taste-rank/e1-sample/v1",
+  "grad_checkpointing": true,
+  "embed_batch": 256
+}
