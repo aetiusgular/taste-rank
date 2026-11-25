@@ -44,7 +44,7 @@ Why this build: Krea is hiring an ML engineer to build personalization "from the
 | Base (headline) | Marqo/marqo-fashionSigLIP | Apache-2.0 | `c56244cc94f92419e8369fa71efdaf403b124ce8` |
 | Second E0 row | patrickjohncyh/fashion-clip | MIT | `7e3ba62ce16b379a1ab479346b66f192e76f51b7` |
 
-P2 writes `models.lock` with both commits. The SigLIP model's remote code is read and pinned before it runs (P4 security review).
+P2 writes `models.lock` with both commits. P4 read the SigLIP repo's remote code at the pinned commit and does not run it: both models load from a host-downloaded folder of pinned `.json` and `.safetensors` files, checked by sha256 before loading (models.lock, SECURITY.md T-4 and T-6).
 
 **E1 training:** LoRA on the image tower's attention projections. Contrastive (in-batch InfoNCE) objective: a train customer's history vector (built as above, through the LoRA'd encoder) against the image embedding of an article that customer bought next. Rank, learning rate and steps tuned on dev only. Five seeds. Runs on the box's 3090; power limit and card recorded in every results row.
 

@@ -45,6 +45,17 @@ Heldout customers are never read by training or tuning, in either window. Dev cu
 - **Score:** cosine similarity between the customer vector and each pool article's normalized image embedding. Ties by article id ascending. History articles are not removed (customers rebuy).
 - **`n_last` and `half_life_days`:** no data has been read, so P2 fixes the default blind (`n_last` 20, half-life 30 days; `history_default`) and the grid (`history_grid`). P5 may choose one grid point on **dev with E0 only**, before any E1 training, logs the choice in a results row and DECISIONS.md, and uses it for every row (POP excepted) on dev and heldout. Otherwise the default stands.
 
+### Missing images (P4, RFI-P3c-2)
+
+The contract above assumes every article has an image. The competition's image folder may lack some. The rule, adopted from D-P3c-6, never favours an encoder row over POP:
+
+- An article id that is not `[0-9A-Za-z_-]+` is refused (`ValueError`), since ids name image paths.
+- A pool article with no image gets no score and ranks after every scored article, by id ascending. It stays in the pool, so it still counts for `pool_coverage` and as a miss.
+- A history purchase with no image is skipped. `n_last` counts purchases, so a skipped one is not replaced by an older purchase.
+- A customer with no history image left gets a zero vector: every score ties and the pool ranks by id. The customer stays evaluated (not dropped), and the count is reported.
+- `missing_images` in each encoder row = distinct articles, pool and evaluated customers' histories together, with no image, each counted once. POP rows carry 0.
+- Training pairs need every image they use: P5 drops a pair whose target or any kept history item has no image before `train`, and logs the count.
+
 ## Training pairs (E1)
 
 For each train customer and each purchase with `t_dat` < `train_cutoff`: target = that article, history = the customer's purchases strictly before the target day (ordering above), last `n_last`. Pairs with empty history are dropped. The loss is in-batch InfoNCE: `cross_entropy(C · Tᵀ / temperature, arange(B))`, with C the normalized customer vectors (through the LoRA'd encoder) and T the normalized target embeddings. The train lane refuses any pair dated on or after `train_cutoff`.
